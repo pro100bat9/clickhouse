@@ -1,0 +1,44 @@
+services:
+  clickhouse:
+    image: clickhouse/clickhouse-server:25.11
+    container_name: clickhouse
+    ports:
+      - "8123:8123"   # HTTP
+      - "9000:9000"   # Native
+      - "9363:9363"   # Prometheus metrics
+    volumes:
+      - ./clickhouse/config.d:/etc/clickhouse-server/config.d:ro
+      - ./user_files:/var/lib/clickhouse/user_files
+      - clickhouse_data:/var/lib/clickhouse
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    depends_on:
+      - clickhouse
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+      - clickhouse
+
+volumes:
+  clickhouse_data:
+  grafana_data:
